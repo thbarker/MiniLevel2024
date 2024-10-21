@@ -8,6 +8,8 @@ using TMPro;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using UnityEngine.UIElements;
 using Unity.VisualScripting;
+using UnityEngine.SceneManagement;
+
 
 public class GameController : MonoBehaviour
 {
@@ -15,11 +17,20 @@ public class GameController : MonoBehaviour
 
     public List<bool> humans = new List<bool>();
 
+    public List<GameObject> characters;
+    public float characterSpeed = 5;
+    public float frequency = 1;
+    public float amplitude = 0.25f;
+
+    public float fallSpeed = 1;
+
     public TMP_Text optionA, optionB, responseBubble, responseText, questionBubble, questionText;
 
     public UnityEngine.UI.Button buttonA, buttonB, admit, deny;
 
-    public int numOfRefugees, numOfHumans;
+    public int numOfRefugees;
+    public int minHumans, maxHumans;
+    private int numOfHumans;
     private int counter = 0;  // To track the number of questions asked
     private bool human;
 
@@ -36,6 +47,8 @@ public class GameController : MonoBehaviour
     void Start()
     {
         //This is the file reading and parsing
+
+        numOfHumans = Random.Range(minHumans, maxHumans + 1);
 
         questions = new List<List<string>>();
         TextAsset textAsset = Resources.Load<TextAsset>("Questions");
@@ -65,6 +78,8 @@ public class GameController : MonoBehaviour
         buttonA.onClick.AddListener(() => OnOptionSelected(1));  // 1 for option A
         buttonB.onClick.AddListener(() => OnOptionSelected(2));  // 2 for option B
 
+
+
         StartCoroutine(GameplayLoop());
     }
 
@@ -89,16 +104,20 @@ public class GameController : MonoBehaviour
 
         if(robotsAdmitted > 0)
         {
-            // TODO: Handle Scene changes 
+            // TODO: Handle Scene changes
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 3);
             Debug.Log("The AI infiltrated your city and took over!");
         } else
         {
-            // TODO: Handle Scene changes 
+            // TODO: Handle Scene changes
+
             if (humansDenied > 0)
             {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 2);
                 Debug.Log("The AI failed to infiltrated your city, but at least one innocent human lost their life at your hands!");
             } else
             {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
                 Debug.Log("The AI failed to infiltrated your city, and no innocent humans lost their lives at your hands!");
             }
         }
@@ -106,7 +125,18 @@ public class GameController : MonoBehaviour
     private IEnumerator Phase()
     {
         counter = 0;
-     
+
+        int characterIndex = Random.Range(0, characters.Count);
+        float sinAdder = -Time.time * frequency;
+        while (characters[characterIndex].transform.position.x < 0)
+        {
+            if(Mathf.Sin(Time.time * frequency + sinAdder) < 0)
+            {
+                sinAdder += Mathf.PI;
+            }
+            characters[characterIndex].transform.position = new Vector3(characters[characterIndex].transform.position.x + Time.deltaTime * characterSpeed, Mathf.Sin(Time.time * frequency + sinAdder) * amplitude + 0.5f, 0);
+            yield return null;
+        }
         // TODO: Animation of the character walking up
 
         while (counter < 3)
@@ -222,6 +252,30 @@ public class GameController : MonoBehaviour
 
         // TODO: Animation of the character's fate
             // Use decision == false for denied, decision == true for admitted
+        if(decision == false)
+        {
+            float startTime = Time.time;
+            while(characters[characterIndex].transform.position.y > -15)
+            {
+                characters[characterIndex].transform.position -= new Vector3(0, fallSpeed * (Time.time - startTime) * (Time.time - startTime), 0);
+                yield return null;
+            }
+        }
+        else
+        {
+            sinAdder = -Time.time * frequency;
+            while (characters[characterIndex].transform.position.x < 15)
+            {
+                if (Mathf.Sin(Time.time * frequency + sinAdder) < 0)
+                {
+                    sinAdder += Mathf.PI;
+                }
+                characters[characterIndex].transform.position = new Vector3(characters[characterIndex].transform.position.x + Time.deltaTime * characterSpeed, Mathf.Sin(Time.time * frequency + sinAdder) * amplitude + 0.5f, 0);
+                yield return null;
+            }
+        }
+
+        characters.RemoveAt(characterIndex);
 
         Debug.Log("End of Phase.");
     }

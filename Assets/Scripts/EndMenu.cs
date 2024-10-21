@@ -7,7 +7,7 @@ public class Lose : MonoBehaviour
 {
     public void PlayGameAgain()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex - 1);
+        SceneManager.LoadScene(0);
     }
     public void QuitGame()
     {
