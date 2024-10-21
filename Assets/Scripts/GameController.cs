@@ -24,7 +24,9 @@ public class GameController : MonoBehaviour
 
     public TMP_Text optionA, optionB, responseBubble, responseText, questionBubble, questionText;
     public UnityEngine.UI.Button buttonA, buttonB, admit, deny;
-    public float typingSpeed = 0.05f; // time before displaying between each letter
+    public Sprite admitOn, denyOn, admitOff, denyOff;
+    public float playerTypingSpeed = 0.01f; // time before displaying between each letter for the player text
+    public float npcTypingSpeed = 0.05f; // time before displaying between each letter for the npc text
 
     public int numOfRefugees;
     public int minHumans, maxHumans;
@@ -134,6 +136,10 @@ public class GameController : MonoBehaviour
         // Allow a decision
         admit.onClick.AddListener(() => OnDecision(true)); // True for the Admit Button
         deny.onClick.AddListener(() => OnDecision(false)); // False for the Deny Button
+        admit.image.sprite = admitOn; // Change the sprite to the ON state
+        deny.image.sprite = denyOn; // Change the sprite to the ON state
+        admit.GetComponent<ButtonEvents>().on = true; // Update the Button Events script so that the hover graphics appear
+        deny.GetComponent<ButtonEvents>().on = true; // Update the Button Events script so that the hover graphics appear
 
         // Wait until the player selects an option (either admit or deny)
         yield return new WaitUntil(() => decisionMade);
@@ -141,6 +147,10 @@ public class GameController : MonoBehaviour
         // Disable decisions
         admit.onClick.RemoveAllListeners(); // True for the Admit Button
         deny.onClick.RemoveAllListeners(); // False for the Deny Button
+        admit.image.sprite = admitOff; // Change the sprite to the OFF state
+        deny.image.sprite = denyOff; // Change the sprite to the OFF state
+        admit.GetComponent<ButtonEvents>().on = false; // Update the Button Events script so that the hover graphics dont appear
+        deny.GetComponent<ButtonEvents>().on = false; // Update the Button Events script so that the hover graphics dont appear
 
         // Adjust game state based on decision outcome
         if (humans[0])
@@ -166,7 +176,6 @@ public class GameController : MonoBehaviour
         // Remove the last interview from the list
         humans.RemoveAt(0);
 
-        // TODO: Animation of the character's fate
         // Use decision == false for denied, decision == true for admitted
         if(decision == false)
         {
@@ -267,16 +276,23 @@ public class GameController : MonoBehaviour
 
     private IEnumerator DisplayMessages(string question, string response)
     {
+        // Clear the question options
+        optionA.SetText("");
+        optionB.SetText("");
+
+        // Hide the npc's dialogue bubble
+        responseBubble.gameObject.SetActive(false);
+
         // Start typing the first message in responseBubble
         questionBubble.gameObject.SetActive(true);
-        yield return StartCoroutine(TypeText(questionText, questionBubble, question));
+        yield return StartCoroutine(TypeText(questionText, questionBubble, question, playerTypingSpeed));
         
         // After the first message finishes, start typing the second message in textBubble
         responseBubble.gameObject.SetActive(true);
-        yield return StartCoroutine(TypeText(responseText, responseBubble, response));
+        yield return StartCoroutine(TypeText(responseText, responseBubble, response, npcTypingSpeed));
     }
 
-    private IEnumerator TypeText(TMP_Text textComponent, TMP_Text bubbleTextComponent, string message)
+    private IEnumerator TypeText(TMP_Text textComponent, TMP_Text bubbleTextComponent, string message, float speed)
     {
         // Clear previous text
         textComponent.text = "";
@@ -287,7 +303,7 @@ public class GameController : MonoBehaviour
         {
             textComponent.text += letter; // Add one letter at a time
             bubbleTextComponent.text += letter; // Add one letter at a time
-            yield return new WaitForSeconds(typingSpeed); // Wait before next letter
+            yield return new WaitForSeconds(speed); // Wait before next letter
         }
     }
 

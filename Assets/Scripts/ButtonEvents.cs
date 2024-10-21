@@ -1,14 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ButtonEvents : MonoBehaviour
 {
     public TMP_Text buttonText;
-    public Sprite selectedImage, unselectedImage;
+    public GameObject selectedImage;
     private Button button;
+    public bool on;
 
     public void Start()
     {
@@ -26,11 +28,15 @@ public class ButtonEvents : MonoBehaviour
     }
     public void OnHoverEnterImage()
     {
-        button.image.sprite = selectedImage;
+        if(on)
+        {
+            selectedImage.SetActive(true);
+        }
     }
 
     public void OnHoverExitImage()
     {
-        button.image.sprite = unselectedImage;
+        selectedImage.SetActive(false);
+
     }
 }
