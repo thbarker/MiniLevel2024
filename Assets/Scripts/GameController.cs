@@ -14,25 +14,22 @@ using UnityEngine.SceneManagement;
 public class GameController : MonoBehaviour
 {
     public List<List<string>> questions;
-
     public List<bool> humans = new List<bool>();
 
     public List<GameObject> characters;
     public float characterSpeed = 5;
     public float frequency = 1;
     public float amplitude = 0.25f;
-
     public float fallSpeed = 1;
 
     public TMP_Text optionA, optionB, responseBubble, responseText, questionBubble, questionText;
-
     public UnityEngine.UI.Button buttonA, buttonB, admit, deny;
+    public float typingSpeed = 0.05f; // time before displaying between each letter
 
     public int numOfRefugees;
     public int minHumans, maxHumans;
     private int numOfHumans;
-    private int counter = 0;  // To track the number of questions asked
-    private bool human;
+    private bool isHuman;
 
     private List<string> question_1, question_2;  // To store the selected questions
     private bool optionSelected = false;
@@ -44,33 +41,30 @@ public class GameController : MonoBehaviour
 
     private bool gameOver = false;
 
+    // Start is called before the first frame update
     void Start()
     {
-        //This is the file reading and parsing
-
         numOfHumans = Random.Range(minHumans, maxHumans + 1);
 
+        /* Read and load Questions.txt from resources folder.
+         * The question is index 0, AI answer is index 1, and human answers are indices 2 and 3.
+         * so for one group: [question, aiAnswer, humanAnswer, humanAnswer]
+         */
         questions = new List<List<string>>();
+        /* load file at Assets/Resources/Questions.txt */
         TextAsset textAsset = Resources.Load<TextAsset>("Questions");
-        if(textAsset != null)
-        {
-            questions = ParseFileContent(textAsset.text);
-        }
-        else
+        if(textAsset == null)
         {
             Debug.LogError("File not Found!");
+            return; // exit
         }
-
-        // The Question is index 0, AI answer is index 1, and human answers are indices 2 and 3
+        questions = ParseFileContent(textAsset.text);
 
         // Setup bool array
-        for(int i = 0; i < numOfRefugees; i++)
-        {
-            if (i < numOfHumans)
-                humans.Add(true);
-            else
-                humans.Add(false);
-        }
+        for (int i = 0; i < numOfHumans; i++)
+            humans.Add(true);
+        for (int i = 0; i < numOfRefugees-numOfHumans; i++)
+            humans.Add(false);
 
         humans = ShuffleListWithOrderBy(humans);
 
@@ -78,14 +72,11 @@ public class GameController : MonoBehaviour
         buttonA.onClick.AddListener(() => OnOptionSelected(1));  // 1 for option A
         buttonB.onClick.AddListener(() => OnOptionSelected(2));  // 2 for option B
 
-
-
         StartCoroutine(GameplayLoop());
     }
 
     private IEnumerator GameplayLoop()
     {
-
         // Continue looping through phases until the humans list is empty
         while (humans.Count > 0)
         {    
@@ -96,7 +87,6 @@ public class GameController : MonoBehaviour
 
             // Call the Phase coroutine and wait for it to finish
             yield return StartCoroutine(Phase());
-            
         }
 
         // After the loop, perform any actions when the game is over
@@ -104,28 +94,24 @@ public class GameController : MonoBehaviour
 
         if(robotsAdmitted > 0)
         {
-            // TODO: Handle Scene changes
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 3);
+            SceneManager.LoadScene("Lose");
             Debug.Log("The AI infiltrated your city and took over!");
-        } else
+        }
+        else if (humansDenied > 0)
         {
-            // TODO: Handle Scene changes
-
-            if (humansDenied > 0)
-            {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 2);
-                Debug.Log("The AI failed to infiltrated your city, but at least one innocent human lost their life at your hands!");
-            } else
-            {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-                Debug.Log("The AI failed to infiltrated your city, and no innocent humans lost their lives at your hands!");
-            }
+            SceneManager.LoadScene("WinAmbiguous");
+            Debug.Log("The AI failed to infiltrated your city, but at least one innocent human lost their life at your hands!");
+        }
+        else
+        {
+            SceneManager.LoadScene("Win");
+            Debug.Log("The AI failed to infiltrated your city, and no innocent humans lost their lives at your hands!");
         }
     }
+
     private IEnumerator Phase()
     {
-        counter = 0;
-
+        // TODO: Animation of the character walking up
         int characterIndex = Random.Range(0, characters.Count);
         float sinAdder = -Time.time * frequency;
         while (characters[characterIndex].transform.position.x < 0)
@@ -137,81 +123,11 @@ public class GameController : MonoBehaviour
             characters[characterIndex].transform.position = new Vector3(characters[characterIndex].transform.position.x + Time.deltaTime * characterSpeed, Mathf.Sin(Time.time * frequency + sinAdder) * amplitude + 0.5f, 0);
             yield return null;
         }
-        // TODO: Animation of the character walking up
 
-        while (counter < 3)
-        {
-            human = humans[0];
+        // Ask questions
+        yield return StartCoroutine(AskQuestion());
 
-            // Select 2 hypothetical questions from the questions list
-            int index = Random.Range(0, questions.Count);
-            question_1 = questions[index];
-            questions.RemoveAt(index);
-
-            index = Random.Range(0, questions.Count);
-            question_2 = questions[index];
-            questions.RemoveAt(index);
-
-            optionA.SetText(question_1[0]);
-            optionB.SetText(question_2[0]);
-
-            // Reset selection flags
-            optionSelected = false;
-            selectedOption = 0;
-
-            // Wait until the player selects an option (either button A or B)
-            yield return new WaitUntil(() => optionSelected);
-
-            responseBubble.gameObject.SetActive(true);
-            questionBubble.gameObject.SetActive(true);
-
-            // Respond to the player's selection
-            if (human)
-            {
-                int rand = (int)Random.Range(2,4);
-                // If it's a human, respond with a human answer
-                if (selectedOption == 1)
-                {
-                    responseBubble.text = question_1[rand];
-                    responseText.text = question_1[rand];
-                    questionBubble.text = question_1[0];
-                    questionText.text = question_1[0];
-                    Debug.Log("Human Answer: " + question_1[rand]);
-                }
-                else
-                {
-                    responseBubble.text = question_2[rand];
-                    responseText.text = question_2[rand];
-                    questionBubble.text = question_2[0];
-                    questionText.text = question_2[0];
-                    Debug.Log("Human Answer: " + question_2[rand]);
-                }
-            }
-            else
-            {
-                // If it's AI, respond with the AI answer
-                if (selectedOption == 1)
-                {
-                    responseBubble.text = question_1[1];
-                    responseText.text = question_1[1];
-                    questionBubble.text = question_1[0];
-                    questionText.text = question_1[0];
-                    Debug.Log("AI Answer: " + question_1[1]);
-                }
-                else
-                {
-                    responseBubble.text = question_2[1];
-                    responseText.text = question_2[1];
-                    questionBubble.text = question_2[0];
-                    questionText.text = question_2[0];
-                    Debug.Log("AI Answer: " + question_2[1]);
-                }
-            }
-
-            counter++;  // Increment counter
-        }
         // Remove Options Text
-
         optionA.SetText("");
         optionB.SetText("");
 
@@ -242,8 +158,8 @@ public class GameController : MonoBehaviour
                 Debug.Log("You let in a robot.");
             }
         }
-
-        // Clear Text Bubbles
+        
+        // Remove speech bubbles
         responseBubble.gameObject.SetActive(false);
         questionBubble.gameObject.SetActive(false);
 
@@ -251,7 +167,7 @@ public class GameController : MonoBehaviour
         humans.RemoveAt(0);
 
         // TODO: Animation of the character's fate
-            // Use decision == false for denied, decision == true for admitted
+        // Use decision == false for denied, decision == true for admitted
         if(decision == false)
         {
             float startTime = Time.time;
@@ -276,8 +192,103 @@ public class GameController : MonoBehaviour
         }
 
         characters.RemoveAt(characterIndex);
-
         Debug.Log("End of Phase.");
+    }
+
+    private IEnumerator AskQuestion()
+    {
+        // Ask 3 questions to NPC
+        int playerQuestionsToAsk = 3;
+        while (playerQuestionsToAsk > 0)
+        {
+            isHuman = humans[0];
+
+            // Select 2 hypothetical questions from the questions list
+            int index = Random.Range(0, questions.Count);
+            question_1 = questions[index];
+            questions.RemoveAt(index);
+
+            index = Random.Range(0, questions.Count);
+            question_2 = questions[index];
+            questions.RemoveAt(index);
+
+            // Display questions in main box
+            optionA.SetText(question_1[0]);
+            optionB.SetText(question_2[0]);
+
+            // Reset selection flags
+            optionSelected = false;
+            selectedOption = 0;
+
+            // Wait until the player selects an option (either button A or B)
+            yield return new WaitUntil(() => optionSelected);
+
+            // Respond to the player's selection
+            if (isHuman)
+            {
+                int rand = (int)Random.Range(2,4);
+                // If it's a human, respond with a human answer
+                if (selectedOption == 1)
+                {
+                    string question = question_1[0];
+                    string response = question_1[rand];
+                    yield return StartCoroutine(DisplayMessages(question, response));
+                    Debug.Log("Human Answer: " + response);
+                }
+                else
+                {
+                    string question = question_2[0];
+                    string response = question_2[rand];
+                    yield return StartCoroutine(DisplayMessages(question, response));
+                    Debug.Log("Human Answer: " + response);
+                }
+            }
+            else // If it's AI, respond with the AI answer
+            {
+                if (selectedOption == 1)
+                {
+                    string question = question_1[0];
+                    string response = question_1[1];
+                    yield return StartCoroutine(DisplayMessages(question, response));
+                    Debug.Log("AI Answer: " + response);
+                }
+                else
+                {
+                    string question = question_2[0];
+                    string response = question_2[1];
+                    yield return StartCoroutine(DisplayMessages(question, response));
+                    Debug.Log("AI Answer: " + response);
+                }
+            }
+
+            playerQuestionsToAsk--;
+        }
+    }
+
+    private IEnumerator DisplayMessages(string question, string response)
+    {
+        // Start typing the first message in responseBubble
+        questionBubble.gameObject.SetActive(true);
+        yield return StartCoroutine(TypeText(questionText, questionBubble, question));
+        
+        // After the first message finishes, start typing the second message in textBubble
+        responseBubble.gameObject.SetActive(true);
+        yield return StartCoroutine(TypeText(responseText, responseBubble, response));
+    }
+
+    private IEnumerator TypeText(TMP_Text textComponent, TMP_Text bubbleTextComponent, string message)
+    {
+        // Clear previous text
+        textComponent.text = "";
+        bubbleTextComponent.text = "";
+
+        // Display each letter one at a time
+        foreach (char letter in message)
+        {
+            textComponent.text += letter; // Add one letter at a time
+            bubbleTextComponent.text += letter; // Add one letter at a time
+            yield return new WaitForSeconds(typingSpeed); // Wait before next letter
+        }
     }
 
     private void OnOptionSelected(int option)
@@ -296,30 +307,23 @@ public class GameController : MonoBehaviour
     private List<List<string>> ParseFileContent(string fileContent)
     {
         List<List<string>> parsedData = new List<List<string>>();
-
-        // Split the entire file content into lines
-        string[] lines = fileContent.Split('\n');
         List<string> currentGroup = new List<string>();
-
+        string[] lines = fileContent.Split('\n'); // split file content into lines
 
         foreach (string line in lines)
         {
             // Trim whitespace and check if the line is non-empty
             if (!string.IsNullOrEmpty(line))
-            {
                 currentGroup.Add(line);
-            }
 
             // Once we have 4 elements in the current group, add it to the list and start a new group
             if (currentGroup.Count == 4)
             {
-                parsedData.Add(new List<string>(currentGroup)); // Create a new list to avoid reference issues
-                currentGroup.Clear();
+                /* Create a new list and pass that reference to parsedData */
+                parsedData.Add(new List<string>(currentGroup)); // add a copy of the current group
+                currentGroup.Clear(); // remove all elements, reuse same list for next group
             }
         }
-
-        // If there are leftover items in the current group (less than 4), they will be ignored
-        // If you want to keep them, you can check and add them manually here.
 
         return parsedData;
     }
@@ -331,9 +335,7 @@ public class GameController : MonoBehaviour
         {
             Debug.Log("New Group:");
             foreach (string element in group)
-            {
                 Debug.Log(element);
-            }
         }
     }
 

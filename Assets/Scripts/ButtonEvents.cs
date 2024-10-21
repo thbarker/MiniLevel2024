@@ -17,7 +17,7 @@ public class ButtonEvents : MonoBehaviour
 
     public void OnHoverEnter()
     {
-        buttonText.color =Color.yellow;
+        buttonText.color = Color.yellow;
     }
 
     public void OnHoverExit()

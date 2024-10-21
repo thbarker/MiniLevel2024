@@ -688,6 +688,7 @@ MonoBehaviour:
   buttonB: {fileID: 1700761068}
   admit: {fileID: 105954934}
   deny: {fileID: 503324415}
+  typingSpeed: 0.05
   numOfRefugees: 3
   minHumans: 1
   maxHumans: 2
@@ -1433,7 +1434,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -241.9701, y: -287}
+  m_AnchoredPosition: {x: -241.97015, y: -287.05}
   m_SizeDelta: {x: -648.26, y: -979.63}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &993035380
@@ -2428,7 +2429,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -241.9701, y: -420}
+  m_AnchoredPosition: {x: -241.97015, y: -420}
   m_SizeDelta: {x: -648.26, y: -978.53}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1700761068
