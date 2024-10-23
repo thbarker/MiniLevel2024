@@ -43,9 +43,30 @@ public class GameController : MonoBehaviour
 
     private bool gameOver = false;
 
+    // Audio Stuff
+    private MusicController musicController;
+    private AudioSource source;
+    [SerializeField]
+    private List<AudioClip> choiceList;
+
     // Start is called before the first frame update
     void Start()
     {
+        /**
+         * Handle the switch from menu music to gameplay music
+         * as well as getting the audio source reference
+         */
+        if(GameObject.FindWithTag("Music"))
+        {
+            musicController = GameObject.FindWithTag("Music").GetComponent<MusicController>();
+            musicController.SwitchToGameplayMusic();
+        } else
+        {
+            Debug.Log("Error. No Music Found.");
+        }
+
+        source = GetComponent<AudioSource>();
+
         numOfHumans = Random.Range(minHumans, maxHumans + 1);
 
         /* Read and load Questions.txt from resources folder.
@@ -312,6 +333,13 @@ public class GameController : MonoBehaviour
         // Player selected an option
         optionSelected = true;
         selectedOption = option;  // Store the selected option
+
+        // Play an audio clip
+        if (choiceList.Count > 0)
+        {
+            int rand = Random.Range(0, choiceList.Count);
+            source.PlayOneShot(choiceList[rand]);
+        }
     }
 
     private void OnDecision(bool admit)
