@@ -200,6 +200,8 @@ public class GameController : MonoBehaviour
         // Use decision == false for denied, decision == true for admitted
         if(decision == false)
         {
+            if(characters[characterIndex].GetComponent<Scream>() != null)
+                characters[characterIndex].GetComponent<Scream>().ScreamSound();
             float startTime = Time.time;
             while(characters[characterIndex].transform.position.y > -15)
             {
@@ -330,16 +332,16 @@ public class GameController : MonoBehaviour
 
     private void OnOptionSelected(int option)
     {
-        // Player selected an option
-        optionSelected = true;
-        selectedOption = option;  // Store the selected option
-
         // Play an audio clip
-        if (choiceList.Count > 0)
+        if (choiceList.Count > 0 && optionSelected == false)
         {
             int rand = Random.Range(0, choiceList.Count);
             source.PlayOneShot(choiceList[rand]);
         }
+        // Player selected an option
+        optionSelected = true;
+        selectedOption = option;  // Store the selected option
+        
     }
 
     private void OnDecision(bool admit)

@@ -12,6 +12,7 @@ public class ButtonEvents : MonoBehaviour
     private Button button;
     public bool on;
     private bool isHovering; // Tracks if the cursor is currently hovering over the image
+    public AudioSource source;
 
     public void Start()
     {
@@ -65,5 +66,11 @@ public class ButtonEvents : MonoBehaviour
                 selectedImage.SetActive(false);
             }
         }
+    }
+
+    public void Sound()
+    {
+        if(on)
+            source.PlayOneShot(source.clip);
     }
 }
